@@ -1,11 +1,12 @@
 import { Album } from "../domain/entity/Album";
 import { Artist } from "../domain/entity/Artist";
+import { Playlist } from "../domain/entity/Playlist";
 import { Track } from "../domain/entity/Track";
 import { PlataformAPI } from "../domain/port/PlataformAPI";
 import { SearchResult } from "../types/searchResult";
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
-import { SpotifyTrack, SpotifyAlbum, SpotifyArtist } from "../types/SpotifyTypes";
+import { SpotifyTrack, SpotifyAlbum, SpotifyArtist, SpotifyPlaylist } from "../types/SpotifyTypes";
 
 export class SpotifyAPI implements PlataformAPI {
     token: string;
@@ -69,6 +70,89 @@ export class SpotifyAPI implements PlataformAPI {
         });
 
         const next = data.tracks.next;
+
+        return { items: tracks, next };
+    }
+
+    async searchPlaylist(name: string): Promise<SearchResult<Playlist[]>> {
+        if (!this.token) {
+            await this.getToken();
+        }
+        const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=playlist`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${this.token}`
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch playlists from Spotify API.");
+        }
+
+        const data = await res.json();
+        const playlists = data.playlists.items
+        .filter((playlist: Playlist) => playlist !== undefined && playlist !== null)
+        .map((playlist: SpotifyPlaylist) => {
+            if (!playlist) return;
+            return new Playlist(playlist.id, playlist.name, playlist.description, playlist.images[0].url, playlist.owner, playlist.public, playlist.tracks, playlist.uri);
+        });
+        const next = data.playlists.next;
+
+        return { items: playlists, next };
+    }
+
+    async getPlaylistById(id: string): Promise<Playlist> {
+        if (!this.token) {
+            await this.getToken();
+        }
+        const url = `https://api.spotify.com/v1/playlists/${id}`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${this.token}`
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch playlists from Spotify API.");
+        }
+
+        const data = await res.json();
+
+        return new Playlist(data.id, data.name, data.description, data.images[0].url, data.owner, data.public, data.tracks, data.uri);
+    }
+
+    async getPlaylistItems(id: string): Promise<SearchResult<Track>> {
+        if (!this.token) {
+            await this.getToken();
+        }
+        const url = `https://api.spotify.com/v1/playlists/${id}/tracks`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${this.token}`
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch playlists from Spotify API.");
+        }
+
+        const data = await res.json();
+
+        const tracks = data.items.map((track) => {
+            if (!track.track) return;
+            const album = new Album(
+                track.track.album.id,
+                track.track.album.name,
+                track.track.album.images?.[0]?.url || '',
+                track.track.album.uri
+            );
+            const artists = track.track.artists.map(artist => new Artist(artist.id, artist.name, artist.uri));
+
+            return new Track(track.id, track.name, album, artists, track.uri);
+        })
+        .filter(track => track != undefined && track != null);
+
+        const next = data.next;
 
         return { items: tracks, next };
     }

@@ -14,8 +14,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     >
     <AudioProvider>
       {children}
-    </AudioProvider>
       <NavMenu />
+    </AudioProvider>
     </ThemeProvider>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import RootLayoutClient from "./layoutClient";
+import { theme } from "./config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,7 @@ export default function RootLayout({
     <>
       <html lang="en" suppressHydrationWarning>
         <head />
-        <body className="p-4">
+        <body className={`bg-${theme.bg}`}>
           <RootLayoutClient>
             {children}
           </RootLayoutClient>
