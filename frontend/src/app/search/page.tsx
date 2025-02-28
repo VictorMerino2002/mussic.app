@@ -11,18 +11,18 @@ import { Playlist } from "../TrackAPI/domain/entity/Playlist";
 import { PlaylistThumnail } from "@/components/PlaylistThumbnail";
 import { theme } from "../config";
 
-const contentType = {
+const ContentType = {
     TRACK: "track",
     PLAYLIST: "playlist"
 }
 
 export default function SearchPage() {
 
-    const { plataformAPI } = useAudio();
+    const { plataformAPI, token } = useAudio();
     const inputRef = useRef<HTMLInputElement>(null);
     const [serchTrackResult, setSearchTrackResult] = useState<SearchResult<Track> | null>(null);
     const [searchPlaylistResult, setSearchPlaylistResult] = useState<SearchResult<Playlist> | null>(null);
-    const [selectedContentType, setSelectedContentType ] = useState(contentType.TRACK);
+    const [selectedContentType, setSelectedContentType ] = useState(ContentType.TRACK);
     
     useMinimize();
 
@@ -37,17 +37,16 @@ export default function SearchPage() {
         const name = inputRef.current.value;
         inputRef.current.value = "";
 
-        if (selectedContentType === contentType.TRACK) {
-            plataformAPI.searchTrack(name)
+        if (selectedContentType === ContentType.TRACK) {
+            plataformAPI.searchTrack(name, token.base)
                 .then((res: SearchResult<Track>) => setSearchTrackResult(res));
-        } else if (selectedContentType === contentType.PLAYLIST) {
-            plataformAPI.searchPlaylist(name)
+        } else if (selectedContentType === ContentType.PLAYLIST) {
+            plataformAPI.searchPlaylist(name, token.base)
                 .then((res: SearchResult<Playlist>) => setSearchPlaylistResult(res));
         }
     }
 
-    const labelClassName = (option: string) => `px-4 py-2 rounded-full cursor-pointer bg-white text-black font-semibold transition ${selectedContentType === option ? `bg-${theme.main}-500 text-white` : ""}`
-
+    let labelClassName = "px-4 py-2 rounded-md cursor-pointer bg-white text-black font-semibold transition";
     return (
         <main className="flex flex-col gap-5 p-4">
             <form className="flex flex-col gap-4" onSubmit={handleSearch}>
@@ -60,14 +59,17 @@ export default function SearchPage() {
                         type="radio"
                         id="track"
                         name="contentType"
-                        value={contentType.TRACK}
-                        checked={selectedContentType === contentType.TRACK}
-                        onChange={() => handleChange(contentType.TRACK)}
+                        value={ContentType.TRACK}
+                        checked={selectedContentType === ContentType.TRACK}
+                        onChange={() => handleChange(ContentType.TRACK)}
                         className="hidden peer/track"
                     />
                     <label
                         htmlFor="track"
-                        className={labelClassName(contentType.TRACK)}
+                        className={labelClassName}
+                        style={
+                            selectedContentType === ContentType.TRACK ? { background: theme.main, color: "white"} : {} 
+                        }
                     >
                         Song
                     </label>
@@ -76,14 +78,17 @@ export default function SearchPage() {
                         type="radio"
                         id="playlist"
                         name="contentType"
-                        value={contentType.PLAYLIST}
-                        checked={selectedContentType === contentType.PLAYLIST}
-                        onChange={() => handleChange(contentType.PLAYLIST)}
+                        value={ContentType.PLAYLIST}
+                        checked={selectedContentType === ContentType.PLAYLIST}
+                        onChange={() => handleChange(ContentType.PLAYLIST)}
                         className="hidden peer/playlist"
                     />
                     <label
                         htmlFor="playlist"
-                        className={labelClassName(contentType.PLAYLIST)}
+                        className={labelClassName}
+                        style={
+                            selectedContentType === ContentType.PLAYLIST ? { background: theme.main, color: "white"} : {} 
+                        }
                     >
                         Playlist
                     </label>
@@ -91,11 +96,11 @@ export default function SearchPage() {
             </form>
 
             <div className="flex flex-col gap-5 p-2">
-                {serchTrackResult && selectedContentType === contentType.TRACK ? serchTrackResult?.items.map(track => (
+                {serchTrackResult && selectedContentType === ContentType.TRACK ? serchTrackResult?.items.map(track => (
                     <TrackThumbnail key={track.id} track={track} />
                 )) : null}
 
-                {searchPlaylistResult && selectedContentType === contentType.PLAYLIST ? searchPlaylistResult?.items.map (playlist => (
+                {searchPlaylistResult && selectedContentType === ContentType.PLAYLIST ? searchPlaylistResult?.items.map (playlist => (
                     <PlaylistThumnail key={playlist.id} playlist={playlist} />
                 )): null}
             </div>

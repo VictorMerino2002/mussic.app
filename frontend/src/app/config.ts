@@ -1,4 +1,4 @@
 export const theme = {
     bg: "black",
-    main: "red"
+    main: "#fb1"
 };

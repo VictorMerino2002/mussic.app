@@ -4,13 +4,13 @@ import { Playlist } from "../entity/Playlist";
 
 
 export interface PlataformAPI {
-    searchTrack(name: string): Promise<SearchResult<Track>>;
+    searchTrack(name: string, token: string): Promise<SearchResult<Track>>;
 
-    getRelatedTrack(track: Track, limit: number): Promise<Track[]>;
+    getRelatedTrack(track: Track, limit: number, token: string): Promise<Track[]>;
 
-    searchPlaylist(name: string): Promise<SearchResult<Playlist[]>>;
+    searchPlaylist(name: string, token: string): Promise<SearchResult<Playlist[]>>;
 
-    getPlaylistById(id: string): Promise<Playlist>;
+    getPlaylistById(id: string, token: string): Promise<Playlist>;
 
-    getPlaylistItems(id: string): Promise<SearchResult<Track>>;
+    getPlaylistItems(id: string, token: string): Promise<SearchResult<Track>>;
 }

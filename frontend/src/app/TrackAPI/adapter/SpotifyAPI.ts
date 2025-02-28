@@ -1,3 +1,4 @@
+"use client"
 import { Album } from "../domain/entity/Album";
 import { Artist } from "../domain/entity/Artist";
 import { Playlist } from "../domain/entity/Playlist";
@@ -6,15 +7,9 @@ import { PlataformAPI } from "../domain/port/PlataformAPI";
 import { SearchResult } from "../types/searchResult";
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
-import { SpotifyTrack, SpotifyAlbum, SpotifyArtist, SpotifyPlaylist } from "../types/SpotifyTypes";
+import { SpotifyTrack, SpotifyArtist, SpotifyPlaylist } from "../types/SpotifyTypes";
 
 export class SpotifyAPI implements PlataformAPI {
-    token: string;
-
-    constructor() {
-        this.token = "";
-    }
-
     
     async getToken() {
         if (!CLIENT_ID || !CLIENT_SECRET) {
@@ -38,17 +33,21 @@ export class SpotifyAPI implements PlataformAPI {
         }
 
         const json = await res.json();
-        this.token = json.access_token;
+        return json.access_token;
     }
 
-    async searchTrack(name: string): Promise<SearchResult<Track>> {
-        if (!this.token) {
-            await this.getToken();
-        }
+    getAuthorizeURL(redirectURI: string) {
+        const url = "https://accounts.spotify.com/authorize";
+        const scope = "playlist-modify-private user-library-modify playlist-modify-public";
+
+        return url + `?client_id=${CLIENT_ID}` + "&response_type=token" + `&redirect_uri=${redirectURI}` + `&scope=${scope}`
+    }
+
+    async searchTrack(name: string, token: string): Promise<SearchResult<Track>> {
         const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=track`;
         const res = await fetch(url, {
             headers: {
-                "Authorization": `Bearer ${this.token}`
+                "Authorization": `Bearer ${token}`
             }
         });
 
@@ -74,14 +73,14 @@ export class SpotifyAPI implements PlataformAPI {
         return { items: tracks, next };
     }
 
-    async searchPlaylist(name: string): Promise<SearchResult<Playlist[]>> {
+    async searchPlaylist(name: string, token: string): Promise<SearchResult<Playlist[]>> {
         if (!this.token) {
             await this.getToken();
         }
         const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=playlist`;
         const res = await fetch(url, {
             headers: {
-                "Authorization": `Bearer ${this.token}`
+                "Authorization": `Bearer ${token}`
             }
         });
 
@@ -101,14 +100,11 @@ export class SpotifyAPI implements PlataformAPI {
         return { items: playlists, next };
     }
 
-    async getPlaylistById(id: string): Promise<Playlist> {
-        if (!this.token) {
-            await this.getToken();
-        }
+    async getPlaylistById(id: string, token: string): Promise<Playlist> {
         const url = `https://api.spotify.com/v1/playlists/${id}`;
         const res = await fetch(url, {
             headers: {
-                "Authorization": `Bearer ${this.token}`
+                "Authorization": `Bearer ${token}`
             }
         });
 
@@ -121,14 +117,11 @@ export class SpotifyAPI implements PlataformAPI {
         return new Playlist(data.id, data.name, data.description, data.images[0].url, data.owner, data.public, data.tracks, data.uri);
     }
 
-    async getPlaylistItems(id: string): Promise<SearchResult<Track>> {
-        if (!this.token) {
-            await this.getToken();
-        }
+    async getPlaylistItems(id: string, token: string): Promise<SearchResult<Track>> {
         const url = `https://api.spotify.com/v1/playlists/${id}/tracks`;
         const res = await fetch(url, {
             headers: {
-                "Authorization": `Bearer ${this.token}`
+                "Authorization": `Bearer ${token}`
             }
         });
 
@@ -137,6 +130,7 @@ export class SpotifyAPI implements PlataformAPI {
         }
 
         const data = await res.json();
+        console.log(data);
 
         const tracks = data.items.map((track) => {
             if (!track.track) return;
@@ -148,31 +142,26 @@ export class SpotifyAPI implements PlataformAPI {
             );
             const artists = track.track.artists.map(artist => new Artist(artist.id, artist.name, artist.uri));
 
-            return new Track(track.id, track.name, album, artists, track.uri);
+            return new Track(track.track.id, track.track.name, album, artists, track.track.uri);
         })
         .filter(track => track != undefined && track != null);
-
         const next = data.next;
-
         return { items: tracks, next };
     }
 
-    async getRelatedTrack(track: Track, limit: number = 5): Promise<Track[]> {
-        if (!this.token) {
-            await this.getToken();
-        }
+    async getRelatedTrack(track: Track, limit: number = 5, token: string): Promise<Track[]> {
         if (!track.artists || track.artists.length === 0) {
             return [];
         }
     
-        const albums = await this.getArtistAlbums(track.artists[0].id);
+        const albums = await this.getArtistAlbums(track.artists[0].id, token);
         const randomAlbums = albums.sort(() => Math.random() - 0.5);
         const relatedTracks: Track[] = [];
     
         let index = 0;
         while (relatedTracks.length < limit && index < randomAlbums.length) {
             const album = randomAlbums[index];
-            const albumTracks = await this.getAlbumTracks(album.id);
+            const albumTracks = await this.getAlbumTracks(album.id, token);
     
             for (const trackData of albumTracks) {
                 if (relatedTracks.length >= limit) break;
@@ -206,12 +195,12 @@ export class SpotifyAPI implements PlataformAPI {
         return relatedTracks;
     }
 
-    async getArtistAlbums(artistId: string) {
+    async getArtistAlbums(artistId: string, token: string) {
         const url = `https://api.spotify.com/v1/artists/${artistId}/albums?limit=50&include_groups=album,single`;
         const res = await fetch(url, {
             method: "GET",
             headers: {
-                Authorization: `Bearer ${this.token}`
+                Authorization: `Bearer ${token}`
             }
         });
 
@@ -223,12 +212,12 @@ export class SpotifyAPI implements PlataformAPI {
         return json.items;
     }
 
-    async getAlbumTracks(albumId: string) {
+    async getAlbumTracks(albumId: string, token: string) {
         const url = `https://api.spotify.com/v1/albums/${albumId}/tracks`;
         const res = await fetch(url, {
             method: "GET",
             headers: {
-                Authorization: `Bearer ${this.token}`
+                Authorization: `Bearer ${token}`
             }
         });
 

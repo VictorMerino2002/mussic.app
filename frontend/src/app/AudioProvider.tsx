@@ -8,6 +8,7 @@ import { IoIosArrowDown } from "react-icons/io";
 import { Slider } from "@/components/ui/slider";
 import ColorThief from "colorthief";
 import { DefaultLoader } from "@/components/ui/Loaders";
+import { useRouter } from "next/navigation";
 
 const AudioContext = createContext<any>(null);
 const MAX_HISTORY_SIZE = 25;
@@ -28,14 +29,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const [trackHistory, setTrackHistory] = useState<Track[]>([]);
     const [audioHistory, setAudioHistory] = useState<string[]>([]);
     const [cursor, setCursor] = useState(0);
+    const [token, setToken] = useState({base: "", user: ""});
+
+    const router = useRouter();
 
     useEffect(() => {
         const getToken = async () => {
-            if (!audioRef.current) return;
-            await plataformAPI.getToken();
+            if (typeof window == "undefined" || token.user) return;
+            const baseToken = await plataformAPI.getToken();
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const user = params.get("access_token");
+
+            if (user) {
+                setToken({base: baseToken, user: user});
+                return;
+            }
+            const authURL = plataformAPI.getAuthorizeURL("http://127.0.0.1:3000");
+            router.push(authURL);
         }
         getToken();
-    },[audioRef]);
+    },[]);
 
     useEffect(() => {
         if (!playStatus) return;
@@ -103,7 +117,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const getAndQueueRelatedTrack = async (baseTrack?: Track) => {
         if (cursor === 0 && cursor !== history.length -1) return;
         const trackToUse = baseTrack ? baseTrack : trackHistory[0];
-        const [relatedTrack] = await plataformAPI.getRelatedTrack(trackToUse, 1);
+        const [relatedTrack] = await plataformAPI.getRelatedTrack(trackToUse, 1, token.base);
         queue(relatedTrack);
     }
 
@@ -150,10 +164,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         getAndQueueRelatedTrack(track);
     }
 
+    const loadPlaylist = async (tracks: Track[]) => {
+        setMaximized(true);
+        clearQueue();
+        tracks.forEach(async (track) => await queue(track));
+    }
+
     const bg = maximized ? `linear-gradient(180deg, ${dominantColor}, #000)` : dominantColor;
 
     return (
-        <AudioContext.Provider value={ { loadInitTrack, plataformAPI, setMaximized }}>
+        <AudioContext.Provider value={ { loadInitTrack, loadPlaylist, plataformAPI, setMaximized, token }}>
             {children}
 
             {trackHistory.length > 0 ? maximized ? (

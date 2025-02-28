@@ -28,7 +28,7 @@ export default function RootLayout({
     <>
       <html lang="en" suppressHydrationWarning>
         <head />
-        <body className={`bg-${theme.bg}`}>
+        <body style={{background: theme.bg}}>
           <RootLayoutClient>
             {children}
           </RootLayoutClient>
