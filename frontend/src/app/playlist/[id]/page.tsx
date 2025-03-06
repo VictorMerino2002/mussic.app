@@ -9,6 +9,9 @@ import { FaPlay } from "react-icons/fa6";
 import ColorThief from "colorthief";
 import { TrackThumbnail } from "@/components/TrackThumbnail";
 import { useAudio } from "@/app/AudioProvider";
+import Link from "next/link";
+import { IoIosArrowBack } from "react-icons/io";
+import { useSessionStorage } from "usehooks-ts";
 
 type ParamsType = {
     id: string;
@@ -16,19 +19,16 @@ type ParamsType = {
 
 export default function PlaylistPage({ params }: { params: ParamsType }) {
     const { id } = React.use<ParamsType>(params);
-    const [playlist, setPlaylist] = useState<Playlist | null>(null);
+    const [storagePlaylist, setStoragePlaylist] = useSessionStorage<Playlist | null>("playlist", null);
+    const [playlist, setPlaylist] = useState<Playlist | null>(storagePlaylist);
     const [tracks, setTracks] = useState<Track[] | null>(null);
     const [dominantColor, setDominantColor] = useState("rgb(0, 0, 0)");
-    const { token, plataformAPI, loadPlaylist } = useAudio();
+    const { token, platformAPI, loadPlaylist } = useAudio();
+
 
     useEffect(() => {
-        const sessionStoragePlaylist = sessionStorage.getItem("playlist");
-        if (sessionStoragePlaylist) {
-            setPlaylist(JSON.parse(sessionStoragePlaylist));
-            return;
-        }
-
-        plataformAPI.getPlaylistById(id, token.base)
+        if (storagePlaylist) return;
+        platformAPI.getPlaylistById(id, token.base)
             .then(res => setPlaylist(res));
     }, []);
 
@@ -46,25 +46,28 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
     }, [playlist]);
 
     useEffect(() => {
-        plataformAPI.getPlaylistItems(id, token.user)
+        platformAPI.getPlaylistItems(id, token.user)
             .then(res => setTracks(res.items));
     }, [playlist]);
 
     return (
         <main>
             <header className="h-80 p-6 relative" style={{background: dominantColor}}>
+            <Link href="/" className="absolute top-8 left-8">
+                <IoIosArrowBack size={20}/>
+            </Link>
                 <img className="h-full mx-auto" src={playlist?.img} alt={playlist?.name} />
             </header>
 
             <section>
-                <div className={"sticky top-0 flex justify-between items-center p-4 h-20 border-b-white border w-full"} style={{background: theme.bg}}>
+                <div className={"sticky top-0 flex justify-between items-center px-4 py-2 border-b-gray-500 border w-full"} style={{background: theme.bg}}>
                     <h2>{playlist?.name}</h2>
                     <button 
                     className={"p-3 rounded-full"} 
                     style={{background: theme.main}}
                     onClick={() => loadPlaylist(tracks)}
                     >
-                        <FaPlay size={20} color="#000"/>
+                        <FaPlay size={15} color="#000"/>
                     </button>
                 </div>
 

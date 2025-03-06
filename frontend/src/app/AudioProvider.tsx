@@ -23,12 +23,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const [dominantColor, setDominantColor] = useState("rgb(0, 0, 0)");
     const [loading, setLoading] = useState(true);
 
-    const plataformAPI = new SpotifyAPI();
+    const platformAPI = new SpotifyAPI();
     const audioExtractor = new SelfAudioExtractor();
 
     const [trackHistory, setTrackHistory] = useState<Track[]>([]);
     const [audioHistory, setAudioHistory] = useState<string[]>([]);
-    const [cursor, setCursor] = useState(0);
+    const playlist = useRef<Track[]>(null);
+    
+    const cursor = useRef(0);
+    const lastCursor = useRef(0);
     const [token, setToken] = useState({base: "", user: ""});
 
     const router = useRouter();
@@ -36,7 +39,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const getToken = async () => {
             if (typeof window == "undefined" || token.user) return;
-            const baseToken = await plataformAPI.getToken();
+            const baseToken = await platformAPI.getToken();
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             const user = params.get("access_token");
@@ -45,7 +48,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 setToken({base: baseToken, user: user});
                 return;
             }
-            const authURL = plataformAPI.getAuthorizeURL("http://127.0.0.1:3000");
+            const currentURL = window.location.origin + window.location.pathname;
+            const authURL = platformAPI.getAuthorizeURL("http://127.0.0.1:3000");
             router.push(authURL);
         }
         getToken();
@@ -60,23 +64,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const img = new Image();
         img.crossOrigin = "anonymous";
-        const currnetTrack = getCurrentTrack();
-        if (!currnetTrack.track) return;
-        img.src = currnetTrack.track.album.img;
+        const currentTrack = getCurrentTrack();
+        if (!currentTrack.track) return;
+        img.src = currentTrack.track.album.img;
     
         img.onload = () => {
             const colorThief = new ColorThief();
             const color = colorThief.getColor(img);
             setDominantColor(`rgb(${color[0]}, ${color[1]}, ${color[2]})`);
         };
-    }, [cursor, trackHistory]);
+    }, [cursor.current, trackHistory]);
 
     useEffect(() => {
-        if (trackHistory.length > 0 && audioHistory.length > 0) {
-          changeAudioSrc();
-        }
-      }, [cursor, trackHistory, audioHistory]);
+        if (audioHistory.length -1 === 0 || lastCursor.current === cursor.current) return;
+        changeAudioSrc();
+        lastCursor.current = cursor.current;
+      }, [cursor.current, audioHistory]);
       
+    useEffect(() => {
+        if (!audioRef.current) return;
+
+        audioRef.current.addEventListener("play", () => setPlayStatus(true));
+        audioRef.current.addEventListener("pause", () => setPlayStatus(false));
+    },[audioRef])
 
     const handleTrackProgress = () => {
         if (isSliding) return;
@@ -103,11 +113,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const audio = await audioExtractor.getAudio(track);
         setLoading(false);
         setAudioHistory(prev => [...prev, audio]);
+        return audio;
     }
 
-    const changeAudioSrc = () => {
+    const changeAudioSrc = (audio?:string) => {
         if (!audioRef.current) return;
-        const { audio } = getCurrentTrack();
+        if (!audio) {
+            audio = getCurrentTrack().audio;
+        }
         audioRef.current.src = audio;
         audioRef.current.load();
         audioRef.current.currentTime = 0;
@@ -115,27 +128,35 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
 
     const getAndQueueRelatedTrack = async (baseTrack?: Track) => {
-        if (cursor === 0 && cursor !== history.length -1) return;
         const trackToUse = baseTrack ? baseTrack : trackHistory[0];
-        const [relatedTrack] = await plataformAPI.getRelatedTrack(trackToUse, 1, token.base);
+        const [relatedTrack] = await platformAPI.getRelatedTrack(trackToUse, 1, token.base);
         queue(relatedTrack);
     }
 
+    const queueNexPlaylistTrack = () => {
+        if (!playlist.current) return;
+        queue(playlist.current[cursor.current +1]);
+    }
+
     const prev = () => {
-        if (cursor === 0) return;
-        setCursor(prev => prev -1);
+        if (cursor.current === 0) return;
+        cursor.current -= 1;
     }
 
     const next = () => {
-        if (cursor === audioHistory.length - 1) return;
-        setCursor(prev => prev +1);
-        getAndQueueRelatedTrack();
+        if (cursor.current === audioHistory.length - 1) return;
+        cursor.current += 1;
+        if (!playlist.current || playlist.current.length -1 === cursor.current) {
+            getAndQueueRelatedTrack();
+            return;
+        } 
+        queueNexPlaylistTrack();
     }
 
     const getCurrentTrack = () => {
         return {
-            track: trackHistory[cursor],
-            audio: audioHistory[cursor]
+            track: trackHistory[cursor.current],
+            audio: audioHistory[cursor.current]
         }
     }
 
@@ -154,26 +175,30 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const clearQueue = () => {
         setTrackHistory([]);
         setAudioHistory([]);
-        setCursor(0);
+        cursor.current = 0;
     }
 
     const loadInitTrack = async (track: Track) => {
         setMaximized(true);
         clearQueue();
-        await queue(track);
+        const firstTrackAudio = await queue(track);
+        changeAudioSrc(firstTrackAudio);
         getAndQueueRelatedTrack(track);
     }
 
     const loadPlaylist = async (tracks: Track[]) => {
         setMaximized(true);
         clearQueue();
-        tracks.forEach(async (track) => await queue(track));
+        const firstTrackAudio = await queue(tracks[0]);
+        changeAudioSrc(firstTrackAudio);
+        playlist.current = tracks;
+        queueNexPlaylistTrack();
     }
 
     const bg = maximized ? `linear-gradient(180deg, ${dominantColor}, #000)` : dominantColor;
 
     return (
-        <AudioContext.Provider value={ { loadInitTrack, loadPlaylist, plataformAPI, setMaximized, token }}>
+        <AudioContext.Provider value={ { loadInitTrack, loadPlaylist, platformAPI, setMaximized, token }}>
             {children}
 
             {trackHistory.length > 0 ? maximized ? (
@@ -182,10 +207,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                     <IoIosArrowDown size={20}/>
                 </button>
                 <main className="flex flex-col w-full gap-4 items-center">
-                    <img className="rounded-md w-full max-w-80" src={trackHistory[cursor].album.img} alt={trackHistory[cursor].name} />
+                    <img className="rounded-md w-full max-w-80" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
                     <div className="w-full">
-                        <h2 className="w-full">{trackHistory[cursor].name}</h2>
-                        <small className="w-full">{trackHistory[cursor].artists.map(a => a.name).join(", ")}</small>
+                        <h2 className="w-full">{trackHistory[cursor.current].name}</h2>
+                        <small className="w-full">{trackHistory[cursor.current].artists.map(a => a.name).join(", ")}</small>
                     </div>
                 </main>
                 <section className="w-full flex flex-col gap-5">
@@ -199,7 +224,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                         className="w-full"
                     />
                     <div className="flex justify-center gap-2">
-                        <button disabled={cursor === 0} className="p-4 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => prev()}>
+                        <button disabled={cursor.current === 0} className="p-4 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => prev()}>
                             <FaBackwardStep />
                         </button>
 
@@ -208,7 +233,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                             :playStatus ? <FaPause size={20} color="#000"/>: <FaPlay size={20} color="#000" />}
                         </button>
 
-                        <button disabled={cursor >= audioHistory.length -1} className="p-4 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => next()}>
+                        <button disabled={cursor.current >= audioHistory.length -1} className="p-4 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => next()}>
                             <FaForwardStep />
                         </button>
                     </div>
@@ -216,11 +241,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             </div>
             ): (
                 <div className="fixed bottom-20 left-4 flex justify-between gap-4 p-2 rounded-md" style={{backgroundColor: bg, width: "calc(100% - 2rem)"}} onClick={() => setMaximized(true)}>
-                    <img className="rounded-md w-14" src={trackHistory[cursor].album.img} alt={trackHistory[cursor].name} />
+                    <img className="rounded-md w-14" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
 
                     <div>
-                        <h2 className="w-full">{trackHistory[cursor].name}</h2>
-                        <small className="w-full">{trackHistory[cursor].artists.map(a => a.name).join(", ")}</small>
+                        <h2 className="w-full">{trackHistory[cursor.current].name}</h2>
+                        <small className="w-full">{trackHistory[cursor.current].artists.map(a => a.name).join(", ")}</small>
                     </div>
 
                     <button className="bg-none p-4" onClick={(e) => togglePlayPause(e)}>

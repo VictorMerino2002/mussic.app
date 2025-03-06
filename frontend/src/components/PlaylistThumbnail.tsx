@@ -1,12 +1,23 @@
+"use client"
 import { Playlist } from "@/app/TrackAPI/domain/entity/Playlist";
 import { useRouter } from "next/navigation";
+import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 
-export const PlaylistThumnail = ({ playlist }: { playlist: Playlist}) => {
+export const PlaylistThumbnail = ({ playlist }: { playlist: Playlist}) => {
 
     const router = useRouter();
 
+    const [searchPlaylistHistory, setSearchPlaylistHistory] = useLocalStorage<Playlist[]>("searchPlaylistHistory", []);
+    const [storagePlaylist, setStoragePlaylist] = useSessionStorage<Playlist | null>("playlist", null);
+
     const handleClick = () => {
-        sessionStorage.setItem("playlist", JSON.stringify(playlist));
+        setStoragePlaylist(playlist);
+        setSearchPlaylistHistory((prev) => {
+            if (!prev.some((t) => t.id === playlist.id)) {
+                return [...prev, playlist];
+            }
+            return prev;
+        });
         router.push(`/playlist/${playlist.id}`);
     }
 

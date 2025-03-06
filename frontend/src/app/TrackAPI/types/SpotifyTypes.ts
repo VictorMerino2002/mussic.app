@@ -2,6 +2,7 @@ export type SpotifyArtist = {
   id: string;
   name: string;
   href: string;
+  images: [ {url: string} ];
   uri: string;
 };
 

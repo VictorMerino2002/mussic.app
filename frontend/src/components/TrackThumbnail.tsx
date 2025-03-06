@@ -1,13 +1,21 @@
 import { useAudio } from "@/app/AudioProvider";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
 import { useState } from "react";
+import { useLocalStorage } from "usehooks-ts";
 
 export function TrackThumbnail({track}: {track: Track}) {
     
     const  { loadInitTrack } = useAudio();
+    const [searchTrackHistory, setSearchTrackHistory] = useLocalStorage<Track[]>("searchTrackHistory", []);
 
     const handleClick = async () => {
         loadInitTrack(track);
+        setSearchTrackHistory((prev) => {
+            if (!prev.some((t) => t.id === track.id)) {
+                return [...prev, track];
+            }
+            return prev;
+        });
     }
 
     return (

@@ -3,13 +3,14 @@ import { Album } from "../domain/entity/Album";
 import { Artist } from "../domain/entity/Artist";
 import { Playlist } from "../domain/entity/Playlist";
 import { Track } from "../domain/entity/Track";
-import { PlataformAPI } from "../domain/port/PlataformAPI";
+import { PlatformAPI } from "../domain/port/PlatformAPI";
 import { SearchResult } from "../types/searchResult";
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
 import { SpotifyTrack, SpotifyArtist, SpotifyPlaylist } from "../types/SpotifyTypes";
+import { defaultImg } from "@/app/config";
 
-export class SpotifyAPI implements PlataformAPI {
+export class SpotifyAPI implements PlatformAPI {
     
     async getToken() {
         if (!CLIENT_ID || !CLIENT_SECRET) {
@@ -63,7 +64,7 @@ export class SpotifyAPI implements PlataformAPI {
                 track.album.images?.[0]?.url || '',
                 track.album.uri
             );
-            const artists = track.artists.map(artist => new Artist(artist.id, artist.name, artist.uri));
+            const artists = track.artists.map(artist => new Artist(artist.id, artist.name, artist.images[0].url, artist.uri));
 
             return new Track(track.id, track.name, album, artists, track.uri);
         });
@@ -74,9 +75,6 @@ export class SpotifyAPI implements PlataformAPI {
     }
 
     async searchPlaylist(name: string, token: string): Promise<SearchResult<Playlist[]>> {
-        if (!this.token) {
-            await this.getToken();
-        }
         const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=playlist`;
         const res = await fetch(url, {
             headers: {
@@ -85,19 +83,43 @@ export class SpotifyAPI implements PlataformAPI {
         });
 
         if (!res.ok) {
-            throw new Error("Failed to fetch playlists from Spotify API.");
+            throw new Error("Failed to fetch playlists.");
         }
 
         const data = await res.json();
         const playlists = data.playlists.items
-        .filter((playlist: Playlist) => playlist !== undefined && playlist !== null)
+        .filter((playlist: SpotifyPlaylist) => playlist !== undefined && playlist !== null)
         .map((playlist: SpotifyPlaylist) => {
-            if (!playlist) return;
             return new Playlist(playlist.id, playlist.name, playlist.description, playlist.images[0].url, playlist.owner, playlist.public, playlist.tracks, playlist.uri);
         });
         const next = data.playlists.next;
 
         return { items: playlists, next };
+    }
+
+    async searchArtist(name: string, token: string): Promise<SearchResult<Artist[]>> {
+        const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch Artists.");
+        }
+
+        const data = await res.json();
+        const artists = data.artists.items
+        .filter((artist: SpotifyArtist) => artist !== undefined && artist !== null)
+        .map((artist: SpotifyArtist) => {
+            const img = artist.images.length > 0 ? artist.images[0].url : defaultImg;
+            return new Artist(artist.id, artist.name, img, artist.uri)
+        })
+
+        const next = data.artists.next;
+
+        return { items: artists, next };
     }
 
     async getPlaylistById(id: string, token: string): Promise<Playlist> {
@@ -117,6 +139,24 @@ export class SpotifyAPI implements PlataformAPI {
         return new Playlist(data.id, data.name, data.description, data.images[0].url, data.owner, data.public, data.tracks, data.uri);
     }
 
+    async getArtistById(id: string, token: string): Promise<Artist> {
+        const url = `https://api.spotify.com/v1/artists/${id}`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        }); 
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch playlists from Spotify API.");
+        }
+
+        const data = await res.json();
+        const img = data?.images?.[0]?.url || defaultImg;
+
+        return new Artist(data.id, data.name, img, data.uri); 
+    }
+
     async getPlaylistItems(id: string, token: string): Promise<SearchResult<Track>> {
         const url = `https://api.spotify.com/v1/playlists/${id}/tracks`;
         const res = await fetch(url, {
@@ -130,17 +170,19 @@ export class SpotifyAPI implements PlataformAPI {
         }
 
         const data = await res.json();
-        console.log(data);
 
         const tracks = data.items.map((track) => {
             if (!track.track) return;
             const album = new Album(
                 track.track.album.id,
                 track.track.album.name,
-                track.track.album.images?.[0]?.url || '',
+                track.track.album.images?.[0]?.url || defaultImg,
                 track.track.album.uri
             );
-            const artists = track.track.artists.map(artist => new Artist(artist.id, artist.name, artist.uri));
+            const artists = track.track.artists.map(artist => {
+                const img = artist?.images?.[0]?.url || defaultImg;
+                return new Artist(artist.id, artist.name, img, artist.uri);
+            });
 
             return new Track(track.track.id, track.track.name, album, artists, track.track.uri);
         })
@@ -174,8 +216,10 @@ export class SpotifyAPI implements PlataformAPI {
                     album.uri
                 );
     
-                const artistsInstance = trackData.artists.map((artist: SpotifyArtist) => 
-                    new Artist(artist.id, artist.name, artist.uri)
+                const artistsInstance = trackData.artists.map((artist: SpotifyArtist) => {
+                    const img = artist?.images?.[0]?.url || defaultImg;
+                    return new Artist(artist.id, artist.name, img,artist.uri);
+                }
                 );
     
                 const newTrack = new Track(
