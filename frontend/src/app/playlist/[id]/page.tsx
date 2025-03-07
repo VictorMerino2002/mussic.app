@@ -56,12 +56,12 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
             <Link href="/" className="absolute top-8 left-8">
                 <IoIosArrowBack size={20}/>
             </Link>
-                <img className="h-full mx-auto" src={playlist?.img} alt={playlist?.name} />
+                <img className="h-full mx-auto shadow-black shadow-lg relative" src={playlist?.img} alt={playlist?.name} />
             </header>
 
             <section>
-                <div className={"sticky top-0 flex justify-between items-center px-4 py-2 border-b-gray-500 border w-full"} style={{background: theme.bg}}>
-                    <h2>{playlist?.name}</h2>
+                <div className={"sticky top-0 flex justify-between items-center px-4 py-2"} style={{background: theme.bg}}>
+                    <h2 className="!text-2xl font-bold">{playlist?.name}</h2>
                     <button 
                     className={"p-3 rounded-full"} 
                     style={{background: theme.main}}
@@ -71,7 +71,7 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-5 p-4">
+                <div className="flex flex-col gap-5 p-4" style={{background: theme.bg2}}>
                 {tracks ? tracks.map((track: Track) => (
                     <TrackThumbnail key={track.id} track={track} />
                 )): null}

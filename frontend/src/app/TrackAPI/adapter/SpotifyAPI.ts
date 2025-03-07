@@ -64,7 +64,10 @@ export class SpotifyAPI implements PlatformAPI {
                 track.album.images?.[0]?.url || '',
                 track.album.uri
             );
-            const artists = track.artists.map(artist => new Artist(artist.id, artist.name, artist.images[0].url, artist.uri));
+            const artists = track.artists.map(artist => {
+                const img = artist?.images?.[0]?.url || defaultImg;
+                return new Artist(artist.id, artist.name, img, artist.uri);
+            });
 
             return new Track(track.id, track.name, album, artists, track.uri);
         });

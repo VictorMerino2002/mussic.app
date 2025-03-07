@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 import yt_dlp
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,8 @@ def get_youtube_url(query: str):
     ydl_opts = {
         'quiet': True,
         'extract_flat': True,
-        'skip_download': True
+        'skip_download': True,
+        'cookiefile': 'cookies.txt'
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -40,7 +42,8 @@ def get_audio_url(url):
     ydl_options = {
         "format": "bestaudio/best",
         "quiet": True,
-        "skip_download": True
+        "skip_download": True,
+        'cookiefile': 'cookies.txt'
     }
 
     audio_url = None

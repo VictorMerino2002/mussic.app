@@ -1,5 +1,6 @@
 export const theme = {
     bg: "black",
+    bg2: "#111",
     main: "#f44"
 };
 

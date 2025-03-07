@@ -36,24 +36,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     const router = useRouter();
 
-    useEffect(() => {
-        const getToken = async () => {
-            if (typeof window == "undefined" || token.user) return;
-            const baseToken = await platformAPI.getToken();
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const user = params.get("access_token");
+    // useEffect(() => {
+    //     const getToken = async () => {
+    //         if (typeof window == "undefined" || token.user) return;
+    //         const baseToken = await platformAPI.getToken();
+    //         const hash = window.location.hash.substring(1);
+    //         const params = new URLSearchParams(hash);
+    //         const user = params.get("access_token");
 
-            if (user) {
-                setToken({base: baseToken, user: user});
-                return;
-            }
-            const currentURL = window.location.origin + window.location.pathname;
-            const authURL = platformAPI.getAuthorizeURL("http://127.0.0.1:3000");
-            router.push(authURL);
-        }
-        getToken();
-    },[]);
+    //         if (user) {
+    //             setToken({base: baseToken, user: user});
+    //             return;
+    //         }
+    //         const currentURL = window.location.origin + window.location.pathname;
+    //         const authURL = platformAPI.getAuthorizeURL("http://127.0.0.1:3000");
+    //         router.push(authURL);
+    //     }
+    //     getToken();
+    // },[]);
 
     useEffect(() => {
         if (!playStatus) return;
