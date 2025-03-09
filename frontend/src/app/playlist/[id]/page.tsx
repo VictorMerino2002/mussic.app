@@ -71,7 +71,7 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-5 p-4" style={{background: theme.bg2}}>
+                <div className="flex flex-col gap-2 p-4" style={{background: theme.bg2}}>
                 {tracks ? tracks.map((track: Track) => (
                     <TrackThumbnail key={track.id} track={track} />
                 )): null}

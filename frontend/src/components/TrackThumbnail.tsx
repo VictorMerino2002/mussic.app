@@ -19,7 +19,7 @@ export function TrackThumbnail({track}: {track: Track}) {
     }
 
     return (
-        <div className="flex gap-3 cursor-pointer" onClick={handleClick}>
+        <div className="flex gap-3 cursor-pointer p-3 rounded-md" onClick={handleClick} style={{background: "#0009"}}>
             <img
                 src={track.album.img}
                 alt={track.album.name}

@@ -27,10 +27,11 @@ export default function SearchPage() {
     const inputRef = useRef<HTMLInputElement>(null);
     const [searchTrackHistory, setSearchTrackHistory] = useLocalStorage<Track[]>("searchTrackHistory", []);
     const [searchPlaylistHistory, setSearchPlaylistHistory] = useLocalStorage<Playlist[]>("searchPlaylistHistory", []);
+    const [searchArtistHistory, setSearchArtistHistory] = useLocalStorage<Playlist[]>("searchArtistHistory", []);
 
     const [serchTrackResult, setSearchTrackResult] = useState<SearchResult<Track> | null>({items: searchTrackHistory, next: ""});
     const [searchPlaylistResult, setSearchPlaylistResult] = useState<SearchResult<Playlist> | null>({items: searchPlaylistHistory, next: ""});
-    const [searchArtistResult, setSearchArtistResult] = useState<SearchResult<Artist> | null>(null);
+    const [searchArtistResult, setSearchArtistResult] = useState<SearchResult<Artist> | null>({items: searchArtistHistory, next: ""});
     const [selectedContentType, setSelectedContentType ] = useState(ContentType.TRACK);
 
     useMinimize();
@@ -65,7 +66,7 @@ export default function SearchPage() {
 
     let labelClassName = "px-4 py-2 rounded-md cursor-pointer bg-white text-black font-semibold transition";
     return (
-        <main className="flex flex-col gap-5 p-4">
+        <main className="flex flex-col gap-5 p-4 min-h-screen" style={{background: theme.bg2}}>
             <form className="flex flex-col gap-4" onSubmit={handleSearch}>
                 <div className="flex items-center" >
                     <Input ref={inputRef} type="text" placeholder="What do you want to listen?" className="h-12 border-none"/>
@@ -97,7 +98,7 @@ export default function SearchPage() {
                 </div>
             </form>
 
-            <div className="flex flex-col gap-5 p-2">
+            <div className="flex flex-col gap-2 p-2">
                 {serchTrackResult && selectedContentType === ContentType.TRACK ? serchTrackResult?.items.map(track => (
                     <TrackThumbnail key={track.id} track={track} />
                 )) : null}

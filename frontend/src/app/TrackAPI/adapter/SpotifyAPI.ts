@@ -7,7 +7,7 @@ import { PlatformAPI } from "../domain/port/PlatformAPI";
 import { SearchResult } from "../types/searchResult";
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET;
-import { SpotifyTrack, SpotifyArtist, SpotifyPlaylist } from "../types/SpotifyTypes";
+import { SpotifyTrack, SpotifyArtist, SpotifyPlaylist, SpotifyAlbum } from "../types/SpotifyTypes";
 import { defaultImg } from "@/app/config";
 
 export class SpotifyAPI implements PlatformAPI {
@@ -174,7 +174,7 @@ export class SpotifyAPI implements PlatformAPI {
 
         const data = await res.json();
 
-        const tracks = data.items.map((track) => {
+        const tracks = data.items.map((track: { track: { album: { id: string; name: string; images: { url: any; }[]; uri: string; }; artists: SpotifyArtist[]; id: string; name: string; uri: string; }; }) => {
             if (!track.track) return;
             const album = new Album(
                 track.track.album.id,
@@ -182,14 +182,14 @@ export class SpotifyAPI implements PlatformAPI {
                 track.track.album.images?.[0]?.url || defaultImg,
                 track.track.album.uri
             );
-            const artists = track.track.artists.map(artist => {
+            const artists = track.track.artists.map((artist: SpotifyArtist) => {
                 const img = artist?.images?.[0]?.url || defaultImg;
                 return new Artist(artist.id, artist.name, img, artist.uri);
             });
 
             return new Track(track.track.id, track.track.name, album, artists, track.track.uri);
         })
-        .filter(track => track != undefined && track != null);
+        .filter((track: null | undefined) => track != undefined && track != null);
         const next = data.next;
         return { items: tracks, next };
     }
@@ -210,14 +210,6 @@ export class SpotifyAPI implements PlatformAPI {
     
             for (const trackData of albumTracks) {
                 if (relatedTracks.length >= limit) break;
-                
-                
-                const albumInstance = new Album(
-                    album.id,
-                    album.name,
-                    album.images?.[0]?.url || '',
-                    album.uri
-                );
     
                 const artistsInstance = trackData.artists.map((artist: SpotifyArtist) => {
                     const img = artist?.images?.[0]?.url || defaultImg;
@@ -228,7 +220,7 @@ export class SpotifyAPI implements PlatformAPI {
                 const newTrack = new Track(
                     trackData.id,
                     trackData.name,
-                    albumInstance,
+                    album,
                     artistsInstance,
                     trackData.uri
                 );
@@ -242,7 +234,7 @@ export class SpotifyAPI implements PlatformAPI {
         return relatedTracks;
     }
 
-    async getArtistAlbums(artistId: string, token: string) {
+    async getArtistAlbums(artistId: string, token: string): Promise<Album[]> {
         const url = `https://api.spotify.com/v1/artists/${artistId}/albums?limit=50&include_groups=album,single`;
         const res = await fetch(url, {
             method: "GET",
@@ -252,11 +244,49 @@ export class SpotifyAPI implements PlatformAPI {
         });
 
         if (!res.ok) {
-            throw new Error("Failed to fetch albums from Spotify API.");
+            throw new Error("Failed to fetch albums.");
         }
 
         const json = await res.json();
-        return json.items;
+        const albums = json.items.map((album: SpotifyAlbum) => {
+            const img = album?.images?.[0]?.url || defaultImg;
+            return new Album(album.id, album.name, img, album.uri);
+        });
+
+        return albums;
+    }
+
+    async getArtistTopTracks(artistId: string, token: string): Promise<Track[]> {
+        const url = `https://api.spotify.com/v1/artists/${artistId}/top-tracks`;
+        const res = await fetch(url, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }   
+        });
+
+        if (!res.ok) {
+            throw new Error("Failed to fetch Top Tracks.");
+        }
+
+        const data = await res.json();
+
+        const tracks = data.tracks.map((track: SpotifyTrack) => {
+            const album = new Album(
+                track.album.id,
+                track.album.name,
+                track.album.images?.[0]?.url || '',
+                track.album.uri
+            );
+            const artists = track.artists.map(artist => {
+                const img = artist?.images?.[0]?.url || defaultImg;
+                return new Artist(artist.id, artist.name, img, artist.uri);
+            });
+
+            return new Track(track.id, track.name, album, artists, track.uri);
+        });
+
+        return tracks;
     }
 
     async getAlbumTracks(albumId: string, token: string) {

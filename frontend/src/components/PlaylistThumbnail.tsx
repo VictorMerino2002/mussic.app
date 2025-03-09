@@ -22,7 +22,7 @@ export const PlaylistThumbnail = ({ playlist }: { playlist: Playlist}) => {
     }
 
     return (
-        <div className="flex gap-3 cursor-pointer" onClick={handleClick}>
+        <div className="flex gap-3 cursor-pointer p-3 rounded-md" onClick={handleClick} style={{background: "#0009"}}>
             <img
                 src={playlist.img}
                 alt={playlist.name}

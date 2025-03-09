@@ -2,6 +2,7 @@ import { Track } from "../entity/Track";
 import { SearchResult } from "../../types/searchResult";
 import { Playlist } from "../entity/Playlist";
 import { Artist } from "../entity/Artist";
+import { Album } from "../entity/Album";
 
 
 export interface PlatformAPI {
@@ -18,4 +19,8 @@ export interface PlatformAPI {
     getArtistById(id: string, token: string): Promise<Artist>;
 
     getPlaylistItems(id: string, token: string): Promise<SearchResult<Track>>;
+
+    getArtistAlbums(artistId: string, token: string): Promise<Album[]>;
+
+    getArtistTopTracks(artistId: string, token: string): Promise<Track[]>;
 }
