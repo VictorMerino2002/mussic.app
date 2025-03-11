@@ -13,6 +13,8 @@ import { theme } from "../config";
 import { useLocalStorage } from "usehooks-ts";
 import { Artist } from "../TrackAPI/domain/entity/Artist";
 import { ArtistThumbnail } from "@/components/ArtistThumbnail";
+import { Album } from "../TrackAPI/domain/entity/Album";
+import { AlbumThumbnail } from "@/components/AlbumThumbnail";
 
 const ContentType = {
     TRACK: "Song",
@@ -28,10 +30,12 @@ export default function SearchPage() {
     const [searchTrackHistory, setSearchTrackHistory] = useLocalStorage<Track[]>("searchTrackHistory", []);
     const [searchPlaylistHistory, setSearchPlaylistHistory] = useLocalStorage<Playlist[]>("searchPlaylistHistory", []);
     const [searchArtistHistory, setSearchArtistHistory] = useLocalStorage<Playlist[]>("searchArtistHistory", []);
+    const [searchAlbumHistory, setSearchAlbumHistory] = useLocalStorage<Playlist[]>("searchAlbumHistory", []);
 
     const [serchTrackResult, setSearchTrackResult] = useState<SearchResult<Track> | null>({items: searchTrackHistory, next: ""});
     const [searchPlaylistResult, setSearchPlaylistResult] = useState<SearchResult<Playlist> | null>({items: searchPlaylistHistory, next: ""});
     const [searchArtistResult, setSearchArtistResult] = useState<SearchResult<Artist> | null>({items: searchArtistHistory, next: ""});
+    const [searchAlbumResult, setSearchAlbumResult] = useState<SearchResult<Album> | null>({items: searchAlbumHistory, next: ""});    
     const [selectedContentType, setSelectedContentType ] = useState(ContentType.TRACK);
 
     useMinimize();
@@ -61,6 +65,11 @@ export default function SearchPage() {
         if (selectedContentType === ContentType.ARTIST) {
             platformAPI.searchArtist(name, token.base)
                 .then((res: SearchResult<Artist>) => setSearchArtistResult(res));
+        }
+
+        if (selectedContentType === ContentType.ALBUM) {
+            platformAPI.searchAlbum(name, token.base)
+                .then((res: SearchResult<Album>) => setSearchAlbumResult(res));
         }
     }
 
@@ -109,6 +118,10 @@ export default function SearchPage() {
 
                 {searchArtistResult && selectedContentType === ContentType.ARTIST ? searchArtistResult?.items.map(artist => (
                     <ArtistThumbnail key={artist.id} artist={artist} />
+                )): null}
+
+                {searchAlbumResult && selectedContentType === ContentType.ALBUM ? searchAlbumResult?.items.map(album => (
+                    <AlbumThumbnail key={album.id} album={album} />
                 )): null}
             </div>
         </main>

@@ -10,8 +10,7 @@ import ColorThief from "colorthief";
 import { theme } from "@/app/config";
 import { FaPlay } from "react-icons/fa6";
 import { Album } from "@/app/TrackAPI/domain/entity/Album";
-import { ArtistThumbnail } from "@/components/ArtistThumbnail";
-import { AlbumThumbnail } from "@/components/AlbumThumbnail";
+import { AlbumThumbnailMid } from "@/components/AlbumThumbnailMid";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
 import { TrackThumbnail } from "@/components/TrackThumbnail";
 
@@ -25,6 +24,7 @@ export default function ArtistPage({ params }: { params: ParamsType }) {
     const [artist, setArtist] = useState<Artist | null>(storageArtist);
     const [dominantColor, setDominantColor] = useState("rgb(0, 0, 0)");
     const [topTracks, setTopTracks] = useState<Track[] | null>(null);
+    const [showMoreTracks, setShowMoreTracks] = useState(false);
     const [albums, setAlbums] = useState<Album[] | null>(null);
     const { platformAPI, token, loadPlaylist } = useAudio();
 
@@ -86,15 +86,17 @@ export default function ArtistPage({ params }: { params: ParamsType }) {
 
             <section className="p-4 flex flex-col gap-2" style={{background: theme.bg2}}>
                 <h3 className="font-bold !text-xl">Top Songs</h3>
-                {topTracks ? topTracks.slice(0,5).map((track: Track) => (
+                {topTracks ? topTracks.slice(0, showMoreTracks ? topTracks.length : 5).map((track: Track) => (
                     <TrackThumbnail key={track.id} track={track} />
                 )) : null}
+
+                <button onClick={() => setShowMoreTracks(prev => !prev)}>Show {showMoreTracks ? "less" : "more"}</button>
             </section>
 
             <section className="p-4 grid grid-cols-2 gap-2 items-center" style={{background: theme.bg2}}>
                 <h3 className="font-bold !text-xl col-span-2">Albums</h3>
                 {albums ? albums.map((album: Album) => (
-                    <AlbumThumbnail key={album.id} album={album}/>
+                    <AlbumThumbnailMid key={album.id} album={album}/>
                 )) : null}
             </section>
         </main>

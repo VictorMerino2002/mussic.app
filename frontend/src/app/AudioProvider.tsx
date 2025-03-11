@@ -241,7 +241,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             </div>
             ): (
                 <div className="fixed bottom-20 left-4 flex justify-between gap-4 p-2 rounded-md" style={{backgroundColor: bg, width: "calc(100% - 2rem)"}} onClick={() => setMaximized(true)}>
-                    <img className="rounded-md w-14" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
+                    <img className="rounded-md w-14 aspect-square" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
 
                     <div>
                         <h2 className="w-full">{trackHistory[cursor.current].name}</h2>

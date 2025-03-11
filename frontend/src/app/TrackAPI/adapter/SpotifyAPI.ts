@@ -58,16 +58,17 @@ export class SpotifyAPI implements PlatformAPI {
 
         const data = await res.json();
         const tracks = data.tracks.items.map((track: SpotifyTrack) => {
-            const album = new Album(
-                track.album.id,
-                track.album.name,
-                track.album.images?.[0]?.url || '',
-                track.album.uri
-            );
             const artists = track.artists.map(artist => {
                 const img = artist?.images?.[0]?.url || defaultImg;
                 return new Artist(artist.id, artist.name, img, artist.uri);
             });
+            const album = new Album(
+                track.album.id,
+                track.album.name,
+                track.album.images?.[0]?.url || '',
+                track.album.uri,
+                artists
+            );
 
             return new Track(track.id, track.name, album, artists, track.uri);
         });
@@ -125,6 +126,29 @@ export class SpotifyAPI implements PlatformAPI {
         return { items: artists, next };
     }
 
+    async searchAlbum(name: string, token: string): Promise<SearchResult<Album[]>> {
+        const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=album`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch Albums");
+
+        const data = await res.json();
+
+        const albums = data.albums.items.map((album) => {
+            const artists = album.artists.map((artist) => new Artist(artist.id, artist.name, "", artist.uri));
+            const img = album?.images?.[0]?.url || defaultImg;
+            return new Album(album.id, album.name, img, album.uri, artists);
+        });
+
+        const next = data.albums.next;
+
+        return { items: albums, next };
+    }
+
     async getPlaylistById(id: string, token: string): Promise<Playlist> {
         const url = `https://api.spotify.com/v1/playlists/${id}`;
         const res = await fetch(url, {
@@ -134,7 +158,7 @@ export class SpotifyAPI implements PlatformAPI {
         });
 
         if (!res.ok) {
-            throw new Error("Failed to fetch playlists from Spotify API.");
+            throw new Error("Failed to fetch playlists.");
         }
 
         const data = await res.json();
@@ -176,16 +200,17 @@ export class SpotifyAPI implements PlatformAPI {
 
         const tracks = data.items.map((track: { track: { album: { id: string; name: string; images: { url: any; }[]; uri: string; }; artists: SpotifyArtist[]; id: string; name: string; uri: string; }; }) => {
             if (!track.track) return;
-            const album = new Album(
-                track.track.album.id,
-                track.track.album.name,
-                track.track.album.images?.[0]?.url || defaultImg,
-                track.track.album.uri
-            );
             const artists = track.track.artists.map((artist: SpotifyArtist) => {
                 const img = artist?.images?.[0]?.url || defaultImg;
                 return new Artist(artist.id, artist.name, img, artist.uri);
             });
+            const album = new Album(
+                track.track.album.id,
+                track.track.album.name,
+                track.track.album.images?.[0]?.url || defaultImg,
+                track.track.album.uri,
+                artists
+            );
 
             return new Track(track.track.id, track.track.name, album, artists, track.track.uri);
         })
@@ -250,7 +275,7 @@ export class SpotifyAPI implements PlatformAPI {
         const json = await res.json();
         const albums = json.items.map((album: SpotifyAlbum) => {
             const img = album?.images?.[0]?.url || defaultImg;
-            return new Album(album.id, album.name, img, album.uri);
+            return new Album(album.id, album.name, img, album.uri, []);
         });
 
         return albums;
@@ -272,16 +297,17 @@ export class SpotifyAPI implements PlatformAPI {
         const data = await res.json();
 
         const tracks = data.tracks.map((track: SpotifyTrack) => {
-            const album = new Album(
-                track.album.id,
-                track.album.name,
-                track.album.images?.[0]?.url || '',
-                track.album.uri
-            );
             const artists = track.artists.map(artist => {
                 const img = artist?.images?.[0]?.url || defaultImg;
                 return new Artist(artist.id, artist.name, img, artist.uri);
             });
+            const album = new Album(
+                track.album.id,
+                track.album.name,
+                track.album.images?.[0]?.url || '',
+                track.album.uri,
+                artists
+            );
 
             return new Track(track.id, track.name, album, artists, track.uri);
         });

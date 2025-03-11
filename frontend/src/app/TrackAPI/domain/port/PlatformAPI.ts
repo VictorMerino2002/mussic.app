@@ -11,6 +11,8 @@ export interface PlatformAPI {
     searchPlaylist(name: string, token: string): Promise<SearchResult<Playlist[]>>;
 
     searchArtist(name: string, token: string): Promise<SearchResult<Artist[]>>;
+
+    searchAlbum(name: string, token: string): Promise<SearchResult<Album[]>>;
     
     getRelatedTrack(track: Track, limit: number, token: string): Promise<Track[]>;
 
