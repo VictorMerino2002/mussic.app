@@ -20,7 +20,11 @@ export interface PlatformAPI {
 
     getArtistById(id: string, token: string): Promise<Artist>;
 
+    getAlbumById(id: string, token: string): Promise<Album>;
+
     getPlaylistItems(id: string, token: string): Promise<SearchResult<Track>>;
+
+    getAlbumItems(id: string, token: string): Promise<SearchResult<Album>>;
 
     getArtistAlbums(artistId: string, token: string): Promise<Album[]>;
 

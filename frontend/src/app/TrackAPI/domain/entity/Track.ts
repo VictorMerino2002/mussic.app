@@ -5,7 +5,7 @@ export class Track {
     constructor(
         public id: string,
         public name: string,
-        public album: Album,
+        public album: Album | null,
         public artists: Artist[],
         public uri: string
     ) {}

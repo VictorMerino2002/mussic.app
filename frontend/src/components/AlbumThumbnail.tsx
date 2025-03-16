@@ -1,9 +1,22 @@
 import { Album } from "@/app/TrackAPI/domain/entity/Album";
+import { useRouter } from "next/navigation";
+import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 
 export const AlbumThumbnail = ({ album }: { album: Album}) => {
 
+    const router = useRouter();
+    const [storageAlbum, setStorageAlbum] = useSessionStorage<Album | null>("album", null);
+    const [searchAlbumHistory, setSearchAlbumHistory] = useLocalStorage<Album[]>("searchAlbumHistory", []);
+
     const handleClick = () => {
-        return;
+        setStorageAlbum(album);
+        setSearchAlbumHistory((prev) => {
+            if (!prev.some((t) => t.id === album.id)) {
+                return [...prev, album];
+            }
+            return prev;
+        });
+        router.push(`/album/${album.id}`);
     }
 
     return (

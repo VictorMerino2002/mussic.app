@@ -1,4 +1,5 @@
 import { useAudio } from "@/app/AudioProvider";
+import { defaultImg } from "@/app/config";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
 import { useState } from "react";
 import { useLocalStorage } from "usehooks-ts";
@@ -18,11 +19,14 @@ export function TrackThumbnail({track}: {track: Track}) {
         });
     }
 
+    const img = track?.album?.img || defaultImg;
+    const imgAlt = track?.album?.name || "default image";
+
     return (
         <div className="flex gap-3 cursor-pointer p-3 rounded-md" onClick={handleClick} style={{background: "#0009"}}>
             <img
-                src={track.album.img}
-                alt={track.album.name}
+                src={img}
+                alt={imgAlt}
                 className="h-16 aspect-square"
             />
             

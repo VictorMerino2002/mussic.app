@@ -30,7 +30,7 @@ export default function SearchPage() {
     const [searchTrackHistory, setSearchTrackHistory] = useLocalStorage<Track[]>("searchTrackHistory", []);
     const [searchPlaylistHistory, setSearchPlaylistHistory] = useLocalStorage<Playlist[]>("searchPlaylistHistory", []);
     const [searchArtistHistory, setSearchArtistHistory] = useLocalStorage<Playlist[]>("searchArtistHistory", []);
-    const [searchAlbumHistory, setSearchAlbumHistory] = useLocalStorage<Playlist[]>("searchAlbumHistory", []);
+    const [searchAlbumHistory, setSearchAlbumHistory] = useLocalStorage<Album[]>("searchAlbumHistory", []);
 
     const [serchTrackResult, setSearchTrackResult] = useState<SearchResult<Track> | null>({items: searchTrackHistory, next: ""});
     const [searchPlaylistResult, setSearchPlaylistResult] = useState<SearchResult<Playlist> | null>({items: searchPlaylistHistory, next: ""});
