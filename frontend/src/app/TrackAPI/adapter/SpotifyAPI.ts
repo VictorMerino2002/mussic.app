@@ -39,7 +39,7 @@ export class SpotifyAPI implements PlatformAPI {
 
     getAuthorizeURL(redirectURI: string) {
         const url = "https://accounts.spotify.com/authorize";
-        const scope = "playlist-modify-private user-library-modify playlist-modify-public";
+        const scope = "playlist-modify-private user-library-modify playlist-modify-public user-top-read";
 
         return url + `?client_id=${CLIENT_ID}` + "&response_type=token" + `&redirect_uri=${redirectURI}` + `&scope=${scope}`
     }
@@ -212,7 +212,6 @@ export class SpotifyAPI implements PlatformAPI {
         if (!res.ok) throw new Error("Failed to fetch album tracks.");
 
         const data = await res.json();
-        console.log(data);
 
         const tracks = data.items.map((track) => {
             if (!track) return;
@@ -375,5 +374,67 @@ export class SpotifyAPI implements PlatformAPI {
 
         const json = await res.json();
         return json.items;
+    }
+
+    async getCurrentUserPlaylists(token: string): Promise<Playlist[]> {
+        const url = "https://api.spotify.com/v1/me/playlists";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+        const playlists = data.items.map(playlist => {
+            const img = playlist?.images?.[0].url || defaultImg;
+            return new Playlist(playlist.id, playlist.name, playlist.description, img, playlist.owner, playlist.public, playlist.tracks, playlist.uri);
+        });
+
+        return playlists;
+    }
+
+    async getCurrentUserTopArtists(token: string): Promise<Artist[]> {
+        const url = "https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=6";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        const artists = data.items.map(artist => {
+            const img = artist?.images?.[0]?.url || defaultImg;
+            return new Artist(artist.id, artist.name, img, artist.uri);
+        });
+
+        return artists;
+    }
+
+    async getCurrentUserTopTracks(token: string): Promise<Track[]> {
+        const url = "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=20";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        const tracks = data.items.map((track: SpotifyTrack) => {
+            const artists = track.artists.map(artist => {
+                const img = artist?.images?.[0]?.url || defaultImg;
+                return new Artist(artist.id, artist.name, img, artist.uri);
+            });
+            const album = new Album(
+                track.album.id,
+                track.album.name,
+                track.album.images?.[0]?.url || defaultImg,
+                track.album.uri,
+                artists
+            );
+
+            return new Track(track.id, track.name, album, artists, track.uri);
+        });
+
+        return tracks;
     }
 }

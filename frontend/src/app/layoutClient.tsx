@@ -1,7 +1,7 @@
 "use client";
 import { ThemeProvider } from "@/components/theme-provider";
 import NavMenu from "@/components/NavMenu";
-import { AudioProvider } from "./AudioProvider";
+import { AudioPlayer } from "./AudioPlayer";
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
 
@@ -12,10 +12,10 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       enableSystem
       disableTransitionOnChange
     >
-    <AudioProvider>
+    <AudioPlayer>
       {children}
       <NavMenu />
-    </AudioProvider>
+    </AudioPlayer>
     </ThemeProvider>
   );
 }

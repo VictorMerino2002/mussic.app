@@ -29,4 +29,10 @@ export interface PlatformAPI {
     getArtistAlbums(artistId: string, token: string): Promise<Album[]>;
 
     getArtistTopTracks(artistId: string, token: string): Promise<Track[]>;
+
+    getCurrentUserPlaylists(token: string): Promise<Playlist[]>;
+
+    getCurrentUserTopArtists(token: string): Promise<Artist[]>;
+
+    getCurrentUserTopTracks(token: string): Promise<Track[]>;
 }

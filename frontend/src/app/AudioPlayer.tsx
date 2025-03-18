@@ -9,11 +9,12 @@ import { Slider } from "@/components/ui/slider";
 import ColorThief from "colorthief";
 import { DefaultLoader } from "@/components/ui/Loaders";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const AudioContext = createContext<any>(null);
 const MAX_HISTORY_SIZE = 25;
 
-export function AudioProvider({ children }: { children: ReactNode }) {
+export function AudioPlayer({ children }: { children: ReactNode }) {
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const [playStatus, setPlayStatus] = useState(true);
@@ -86,7 +87,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
         audioRef.current.addEventListener("play", () => setPlayStatus(true));
         audioRef.current.addEventListener("pause", () => setPlayStatus(false));
-    },[audioRef])
+    },[audioRef]);
+
+    useEffect(() => {
+        setPlayStatus(!audioRef.current?.paused);
+    },[audioRef.current])
 
     const handleTrackProgress = () => {
         if (isSliding) return;
@@ -207,10 +212,17 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                     <IoIosArrowDown size={20}/>
                 </button>
                 <main className="flex flex-col w-full gap-4 items-center">
-                    <img className="rounded-md w-full max-w-80" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
+                    <img className="rounded-md w-full max-w-80" src={trackHistory[cursor.current]?.album?.img} alt={trackHistory[cursor.current].name} />
                     <div className="w-full">
                         <h2 className="w-full">{trackHistory[cursor.current].name}</h2>
-                        <small className="w-full">{trackHistory[cursor.current].artists.map(a => a.name).join(", ")}</small>
+                        <small className="block w-full max-w-full truncate overflow-hidden whitespace-nowrap">
+                            {trackHistory[cursor.current].artists.map((a, index) => (
+                                <span key={a.id}>
+                                    <Link href={`/artist/${a.id}`}>{a.name}</Link>
+                                    {index < trackHistory[cursor.current].artists.length - 1 ? ', ' : ''}
+                                </span>
+                            ))}
+                        </small>
                     </div>
                 </main>
                 <section className="w-full flex flex-col gap-5">
@@ -240,16 +252,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 </section>
             </div>
             ): (
-                <div className="fixed bottom-20 left-4 flex justify-between gap-4 p-2 rounded-md" style={{backgroundColor: bg, width: "calc(100% - 2rem)"}} onClick={() => setMaximized(true)}>
-                    <img className="rounded-md w-14 aspect-square" src={trackHistory[cursor.current].album.img} alt={trackHistory[cursor.current].name} />
+                <div className="fixed bottom-[70px] left-4 flex justify-between gap-4 p-2 rounded-md" style={{backgroundColor: bg, width: "calc(100% - 2rem)"}} onClick={() => setMaximized(true)}>
+                    <img className="rounded-md w-14 aspect-square" src={trackHistory[cursor.current]?.album?.img} alt={trackHistory[cursor.current].name} />
 
                     <div>
-                        <h2 className="w-full">{trackHistory[cursor.current].name}</h2>
-                        <small className="w-full">{trackHistory[cursor.current].artists.map(a => a.name).join(", ")}</small>
+                        <h2 className="w-full max-w-full truncate overflow-hidden whitespace-nowrap">{trackHistory[cursor.current].name}</h2>
+                        <small className="block w-full max-w-full truncate overflow-hidden whitespace-nowrap">
+                            {trackHistory[cursor.current].artists.map((a, index) => (
+                                <span key={a.id}>
+                                    <Link onClick={(e) => e.stopPropagation()} href={`/artist/${a.id}`}>{a.name}</Link>
+                                    {index < trackHistory[cursor.current].artists.length - 1 ? ', ' : ''}
+                                </span>
+                            ))}
+                        </small>
                     </div>
 
                     <button className="bg-none p-4" onClick={(e) => togglePlayPause(e)}>
-                            {playStatus ? <FaPause size={20}/>: <FaPlay size={20}/>}  
+                            {loading ? <DefaultLoader/> 
+                            :playStatus ? <FaPause size={20} />: <FaPlay size={20} />}
                     </button>
                 </div>
             )

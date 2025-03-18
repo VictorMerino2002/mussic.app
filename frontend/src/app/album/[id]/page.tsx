@@ -1,15 +1,15 @@
 "use client"
-import { useAudio } from "@/app/AudioProvider";
+import { useAudio } from "@/app/AudioPlayer";
 import { Album } from "@/app/TrackAPI/domain/entity/Album";
 import React, { useEffect, useState } from "react";
 import { useSessionStorage } from "usehooks-ts";
 import ColorThief from "colorthief";
-import Link from "next/link";
 import { IoIosArrowBack } from "react-icons/io";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
 import { TrackThumbnail } from "@/components/TrackThumbnail";
 import { theme } from "@/app/config";
 import { FaPlay } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
 
 type ParamsType = {
     id: string;
@@ -22,11 +22,15 @@ export default function AlbumPage({ params }: { params: ParamsType }) {
     const [tracks, setTracks] = useState<Track[] | null>(null);
     const [dominantColor, setDominantColor] = useState("rgb(0,0,0)");
     const { token, platformAPI, loadPlaylist } = useAudio();
+    const router = useRouter();
 
     useEffect(() => {
-        if (storageAlbum) return;
+        if (storageAlbum && storageAlbum.id === id) return;
         platformAPI.getAlbumById(id, token.user)
-            .then(res => setAlbum(res));
+            .then(res => {
+                setStorageAlbum(res);
+                setAlbum(res);
+            });
     },[]);
 
     useEffect(() => {
@@ -44,15 +48,21 @@ export default function AlbumPage({ params }: { params: ParamsType }) {
 
     useEffect(() => {
         platformAPI.getAlbumItems(id, token.user)
-            .then(res => setTracks(res.items));
+            .then(res => {
+                const tracksWithAlbums = res.items.map(track => {
+                    track.album = album
+                    return track;
+                });
+                setTracks(tracksWithAlbums);
+            });
     }, [album]);
 
     return (
         <main>
             <header className="h-80 p-6 relative" style={{background: dominantColor}}>
-            <Link href="/" className="absolute top-8 left-8">
+            <button onClick={() => router.back()} className="absolute top-8 left-8">
                 <IoIosArrowBack size={20}/>
-            </Link>
+            </button>
                 <img className="h-full mx-auto shadow-black shadow-lg relative" src={album?.img} alt={album?.name} />
             </header>
 

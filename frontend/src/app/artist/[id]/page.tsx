@@ -1,8 +1,7 @@
 "use client"
 
-import { useAudio } from "@/app/AudioProvider";
+import { useAudio } from "@/app/AudioPlayer";
 import { Artist } from "@/app/TrackAPI/domain/entity/Artist";
-import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
 import { useSessionStorage } from "usehooks-ts";
@@ -13,6 +12,8 @@ import { Album } from "@/app/TrackAPI/domain/entity/Album";
 import { AlbumThumbnailMid } from "@/components/AlbumThumbnailMid";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
 import { TrackThumbnail } from "@/components/TrackThumbnail";
+import { useMinimize } from "@/app/hooks/useMinimize";
+import { useRouter } from "next/navigation";
 
 type ParamsType = {
     id: string;
@@ -27,11 +28,17 @@ export default function ArtistPage({ params }: { params: ParamsType }) {
     const [showMoreTracks, setShowMoreTracks] = useState(false);
     const [albums, setAlbums] = useState<Album[] | null>(null);
     const { platformAPI, token, loadPlaylist } = useAudio();
+    const router = useRouter();
+
+    useMinimize();
 
     useEffect(() => {
-        if (storageArtist) return;
+        if (storageArtist && storageArtist.id === id) return;
         platformAPI.getArtistById(id, token.base)
-            .then((res: Artist) => setArtist(res));
+            .then((res: Artist) => {
+                setStorageArtist(res);
+                setArtist(res);
+            });
     }, []);
 
     useEffect(() => {
@@ -66,9 +73,9 @@ export default function ArtistPage({ params }: { params: ParamsType }) {
     return (
         <main>
             <header className="h-80 p-6 relative" style={{background: dominantColor}}>
-            <Link href="/" className="absolute top-8 left-8">
+            <button onClick={() => router.back()} className="absolute top-8 left-8">
                 <IoIosArrowBack size={20}/>
-            </Link>
+            </button>
                 <img className="h-full aspect-square object-cover mx-auto shadow-black shadow-lg relative" src={artist?.img} alt={artist?.name} />
             </header>
 

@@ -1,38 +1,40 @@
-import { useAudio } from "@/app/AudioProvider";
+import { useAudio } from "@/app/AudioPlayer";
 import { defaultImg } from "@/app/config";
+import { useSearchHistory } from "@/app/hooks/useSearchHistory";
 import { Track } from "@/app/TrackAPI/domain/entity/Track";
-import { useState } from "react";
-import { useLocalStorage } from "usehooks-ts";
+import Link from "next/link";
 
 export function TrackThumbnail({track}: {track: Track}) {
     
     const  { loadInitTrack } = useAudio();
-    const [searchTrackHistory, setSearchTrackHistory] = useLocalStorage<Track[]>("searchTrackHistory", []);
+    const trackHistory = useSearchHistory<Track>("track");
 
     const handleClick = async () => {
         loadInitTrack(track);
-        setSearchTrackHistory((prev) => {
-            if (!prev.some((t) => t.id === track.id)) {
-                return [...prev, track];
-            }
-            return prev;
-        });
+        trackHistory.push(track);
     }
 
     const img = track?.album?.img || defaultImg;
     const imgAlt = track?.album?.name || "default image";
 
     return (
-        <div className="flex gap-3 cursor-pointer p-3 rounded-md" onClick={handleClick} style={{background: "#0009"}}>
+        <div className="flex gap-3 cursor-pointer p-2 rounded-md" onClick={handleClick} style={{background: "#0009"}}>
             <img
                 src={img}
                 alt={imgAlt}
-                className="h-16 aspect-square"
+                className="h-16 aspect-square rounded-md"
             />
             
-            <div className="w-full flex flex-col">
+            <div className="flex flex-col">
                 <h3>{track.name}</h3>
-                <small>{track.artists.map(a => a.name).join(", ")}</small>
+                <small className="truncate overflow-hidden whitespace-nowrap text-ellipsis max-w-[200px]">
+                    {track.artists.map((a, index) => (
+                        <span key={a.id}>
+                            <Link onClick={(e) => e.stopPropagation()} href={`/artist/${a.id}`}>{a.name}</Link>
+                            {index < track.artists.length - 1 ? ', ' : ''}
+                        </span>
+                    ))}
+                </small>
             </div>
         </div>
     )

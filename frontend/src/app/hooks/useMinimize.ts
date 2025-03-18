@@ -1,6 +1,6 @@
 "use client"
 import { useEffect } from "react"
-import { useAudio } from "../AudioProvider";
+import { useAudio } from "../AudioPlayer";
 
 export const useMinimize = () => {
     

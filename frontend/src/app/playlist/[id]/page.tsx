@@ -8,10 +8,10 @@ import { useEffect, useState } from "react";
 import { FaPlay } from "react-icons/fa6";
 import ColorThief from "colorthief";
 import { TrackThumbnail } from "@/components/TrackThumbnail";
-import { useAudio } from "@/app/AudioProvider";
-import Link from "next/link";
+import { useAudio } from "@/app/AudioPlayer";
 import { IoIosArrowBack } from "react-icons/io";
 import { useSessionStorage } from "usehooks-ts";
+import { useRouter } from "next/navigation";
 
 type ParamsType = {
     id: string;
@@ -24,12 +24,15 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
     const [tracks, setTracks] = useState<Track[] | null>(null);
     const [dominantColor, setDominantColor] = useState("rgb(0, 0, 0)");
     const { token, platformAPI, loadPlaylist } = useAudio();
-
+    const router = useRouter();
 
     useEffect(() => {
-        if (storagePlaylist) return;
+        if (storagePlaylist && storagePlaylist.id === id) return;
         platformAPI.getPlaylistById(id, token.base)
-            .then(res => setPlaylist(res));
+            .then(res => {
+                setStoragePlaylist(res);
+                setPlaylist(res);
+            });
     }, []);
 
     useEffect(() => {
@@ -53,15 +56,18 @@ export default function PlaylistPage({ params }: { params: ParamsType }) {
     return (
         <main>
             <header className="h-80 p-6 relative" style={{background: dominantColor}}>
-            <Link href="/" className="absolute top-8 left-8">
+            <button onClick={() => router.back()} className="absolute top-8 left-8">
                 <IoIosArrowBack size={20}/>
-            </Link>
+            </button>
                 <img className="h-full mx-auto shadow-black shadow-lg relative" src={playlist?.img} alt={playlist?.name} />
             </header>
 
             <section>
                 <div className={"sticky top-0 flex justify-between items-center px-4 py-2"} style={{background: theme.bg}}>
-                    <h2 className="!text-2xl font-bold">{playlist?.name}</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="!text-2xl font-bold">{playlist?.name}</h2>
+                        <small>{playlist?.owner.display_name}</small>
+                    </div>
                     <button 
                     className={"p-3 rounded-full"} 
                     style={{background: theme.main}}
