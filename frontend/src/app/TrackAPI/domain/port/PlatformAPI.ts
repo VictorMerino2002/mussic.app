@@ -35,4 +35,8 @@ export interface PlatformAPI {
     getCurrentUserTopArtists(token: string): Promise<Artist[]>;
 
     getCurrentUserTopTracks(token: string): Promise<Track[]>;
+
+    getRandomCurrentUserTopArtists(items: number, token: string): Promise<Artist[]>;
+
+    getRandomCurrentUserTopTracks(items: number, token: string): Promise<Track[]>;
 }

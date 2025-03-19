@@ -67,6 +67,7 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
         img.crossOrigin = "anonymous";
         const currentTrack = getCurrentTrack();
         if (!currentTrack.track) return;
+        if (!currentTrack?.track?.album?.img) return;
         img.src = currentTrack.track.album.img;
     
         img.onload = () => {
@@ -182,17 +183,25 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
         setAudioHistory([]);
         cursor.current = 0;
     }
+    
+    const resetPlayer = () => {
+        setMaximized(true);
+        setTrackProgress(0);
+        audioRef.current?.pause();
+        setLoading(true);
+    }
 
     const loadInitTrack = async (track: Track) => {
-        setMaximized(true);
+        resetPlayer();
         clearQueue();
         const firstTrackAudio = await queue(track);
         changeAudioSrc(firstTrackAudio);
+        audioRef.current?.play();
         getAndQueueRelatedTrack(track);
     }
 
     const loadPlaylist = async (tracks: Track[]) => {
-        setMaximized(true);
+        resetPlayer();
         clearQueue();
         const firstTrackAudio = await queue(tracks[0]);
         changeAudioSrc(firstTrackAudio);
@@ -241,7 +250,7 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
                         </button>
 
                         <button className="bg-white p-2 rounded-full aspect-square flex justify-center items-center" onClick={(e) => togglePlayPause(e)}>
-                            {loading ? <DefaultLoader/> 
+                            {loading ? <DefaultLoader white={false}/> 
                             :playStatus ? <FaPause size={20} color="#000"/>: <FaPlay size={20} color="#000" />}
                         </button>
 
@@ -256,7 +265,7 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
                     <img className="rounded-md w-14 aspect-square" src={trackHistory[cursor.current]?.album?.img} alt={trackHistory[cursor.current].name} />
 
                     <div>
-                        <h2 className="w-full max-w-full truncate overflow-hidden whitespace-nowrap">{trackHistory[cursor.current].name}</h2>
+                        <h2 className="w-full max-w-[200px] truncate overflow-hidden whitespace-nowrap">{trackHistory[cursor.current].name}</h2>
                         <small className="block w-full max-w-full truncate overflow-hidden whitespace-nowrap">
                             {trackHistory[cursor.current].artists.map((a, index) => (
                                 <span key={a.id}>
@@ -268,7 +277,7 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
                     </div>
 
                     <button className="bg-none p-4" onClick={(e) => togglePlayPause(e)}>
-                            {loading ? <DefaultLoader/> 
+                            {loading ? <DefaultLoader white={true}/> 
                             :playStatus ? <FaPause size={20} />: <FaPlay size={20} />}
                     </button>
                 </div>

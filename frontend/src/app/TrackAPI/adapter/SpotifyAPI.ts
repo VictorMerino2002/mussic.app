@@ -437,4 +437,83 @@ export class SpotifyAPI implements PlatformAPI {
 
         return tracks;
     }
+
+    async getRandomCurrentUserTopArtists(total: number, token: string): Promise<Artist[]> {
+        const limit = 6;
+        let offset = Math.floor(Math.random() * total);
+
+        if (offset + limit > total) offset = total - limit; 
+
+        const url = `https://api.spotify.com/v1/me/top/artists?time_range=long_term&offset=${offset}&limit=${limit}`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        const artists = data.items.map(artist => {
+            const img = artist?.images?.[0]?.url || defaultImg;
+            return new Artist(artist.id, artist.name, img, artist.uri);
+        });
+
+        return artists;     
+    }
+
+    async getRandomCurrentUserTopTracks(total: number, token: string): Promise<Track[]> {
+        const limit = 20;
+        let offset = Math.floor(Math.random() * total);
+
+        if (offset + limit > total) offset = total - limit; 
+
+        const url = `https://api.spotify.com/v1/me/top/tracks?time_range=long_term&offset=${offset}&limit=${limit}`;
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        const tracks = data.items.map((track: SpotifyTrack) => {
+            const artists = track.artists.map(artist => {
+                const img = artist?.images?.[0]?.url || defaultImg;
+                return new Artist(artist.id, artist.name, img, artist.uri);
+            });
+            const album = new Album(
+                track.album.id,
+                track.album.name,
+                track.album.images?.[0]?.url || defaultImg,
+                track.album.uri,
+                artists
+            );
+
+            return new Track(track.id, track.name, album, artists, track.uri);
+        });
+
+        return tracks;
+    }
+    
+    async getCurrentUserTopArtistsNumOfItems(token: string): Promise<number> {
+        const url = "https://api.spotify.com/v1/me/top/artists?time_range=long_term&limit=1";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        return data.total;     
+    }
+
+    async getCurrentUserTopTracksNumOfItems(token: string): Promise<number> {
+        const url = "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=1";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();  
+        return data.total;     
+    }
 }
