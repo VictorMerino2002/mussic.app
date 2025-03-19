@@ -49,8 +49,8 @@ export function AudioPlayer({ children }: { children: ReactNode }) {
                 setToken({base: baseToken, user: user});
                 return;
             }
-            const currentURL = window.location.origin + window.location.pathname;
-            const authURL = platformAPI.getAuthorizeURL("http://127.0.0.1:3000");
+            const currentURL = window.location.origin;
+            const authURL = platformAPI.getAuthorizeURL(currentURL);
             router.push(authURL);
         }
         getToken();
